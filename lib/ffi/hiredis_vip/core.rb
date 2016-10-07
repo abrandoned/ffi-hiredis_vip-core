@@ -10,7 +10,8 @@ module FFI
       ffi_lib_flags :now, :global
       # TODO: can we support libhiredis + libhiredis_vip and enable clustering on the latter?
       # TODO: need to provide ways to set the loading of the lip and check standard lib paths
-      ffi_lib File.expand_path("../../../../hiredis-vip/libhiredis_vip.#{::FFI::Platform::LIBSUFFIX}", File.dirname(__FILE__))
+      LIB_HOME = ENV["HIREDIS_VIP_HOME"]
+      ffi_lib File.expand_path("#{LIB_HOME}/libhiredis_vip.#{::FFI::Platform::LIBSUFFIX}", File.dirname(__FILE__))
 
       RedisClusterFlags = enum :HIRCLUSTER_FLAG_NULL, 0x0,
         :HIRCLUSTER_FLAG_ADD_SLAVE, 0x1000, #/* The flag to decide whether add slave node in redisClusterContext->nodes. This is set in the
