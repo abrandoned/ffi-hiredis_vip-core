@@ -51,7 +51,7 @@ module FFI
 
       attach_function :freeReplyObject, [:pointer], :void, :blocking => true
 
-      attach_fucntion :redisReplyElement, [:pointer, :size_t], RedisReply.ptr, :blocking => true
+      attach_function :redisReplyElement, [:pointer, :size_t], RedisReply.ptr, :blocking => true
       attach_function :redisConnect, [:string, :int], :pointer, :blocking => true
       attach_function :redisReconnect, [:pointer], RedisOkType, :blocking => true # :pointer => redisContext
       attach_function :redisEnableKeepAlive, [:pointer], RedisOkType, :blocking => true # :pointer => redisContext
