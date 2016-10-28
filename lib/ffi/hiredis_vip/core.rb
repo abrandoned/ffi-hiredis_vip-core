@@ -8,10 +8,61 @@ module FFI
     module Core
       extend ::FFI::Library
       ffi_lib_flags :now, :global
-      # TODO: can we support libhiredis + libhiredis_vip and enable clustering on the latter?
-      # TODO: need to provide ways to set the loading of the lip and check standard lib paths
-      LIB_HOME = ENV["HIREDIS_VIP_HOME"]
-      ffi_lib File.expand_path("#{LIB_HOME}/libhiredis_vip.#{::FFI::Platform::LIBSUFFIX}", File.dirname(__FILE__))
+
+      ##
+      # ffi-rzmq-core for reference
+      #
+      # https://github.com/chuckremes/ffi-rzmq-core/blob/master/lib/ffi-rzmq-core/libzmq.rb
+      #
+      begin
+        # bias the library discovery to a path inside the gem first, then
+        # to the usual system paths
+        inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
+        local_path = FFI::Platform::IS_WINDOWS ? ENV['PATH'].split(';') : ENV['PATH'].split(':')
+        env_path = [ ENV['HIREDIS_VIP_LIB_PATH'] ].compact
+        rbconfig_path = RbConfig::CONFIG["libdir"]
+        homebrew_path = nil
+
+        # RUBYOPT set by RVM breaks 'brew' so we need to unset it.
+        rubyopt = ENV.delete('RUBYOPT')
+
+        begin
+          stdout, stderr, status = Open3.capture3("brew", "--prefix")
+          homebrew_path  = if status.success?
+                             "#{stdout.chomp}/lib"
+                           else
+                             '/usr/local/homebrew/lib'
+                           end
+        rescue
+          # Homebrew doesn't exist
+        end
+
+        # Restore RUBYOPT after executing 'brew' above.
+        ENV['RUBYOPT'] = rubyopt
+
+        # Search for libhiredis_vip in the following order...
+        HIREDIS_VIP_LIB_PATHS = ([inside_gem] + env_path + local_path + [rbconfig_path] + [
+          '/usr/local/lib', '/opt/local/lib', homebrew_path, '/usr/lib64'
+        ]).compact.map{|path| "#{path}/libhiredis_vip.#{FFI::Platform::LIBSUFFIX}"}
+        ffi_lib(HIREDIS_VIP_LIB_PATHS + %w{libhiredis_vip})
+
+      rescue LoadError
+        if HIREDIS_VIP_LIB_PATHS.any? {|path|
+          File.file? File.join(path, "libhiredis_vip.#{FFI::Platform::LIBSUFFIX}")}
+          warn "Unable to load this gem. The libhiredis_vip library exists, but cannot be loaded."
+          warn "If this is Windows:"
+          warn "-  Check that you have MSVC runtime installed or statically linked"
+          warn "-  Check that your DLL is compiled for #{FFI::Platform::ADDRESS_SIZE} bit"
+        else
+          warn "Unable to load this gem. The libhiredis_vip library (or DLL) could not be found."
+          warn "If this is a Windows platform, make sure libhiredis_vip.dll is on the PATH."
+          warn "If the DLL was built with mingw, make sure the other two dependent DLLs,"
+          warn "libgcc_s_sjlj-1.dll and libstdc++6.dll, are also on the PATH."
+          warn "For non-Windows platforms, make sure libhiredis_vip is located in this search path:"
+          warn HIREDIS_VIP_LIB_PATHS.inspect
+        end
+        raise LoadError, "The libhiredis_vip library (or DLL) could not be loaded"
+      end
 
       RedisClusterFlags = enum :HIRCLUSTER_FLAG_NULL, 0x0,
         :HIRCLUSTER_FLAG_ADD_SLAVE, 0x1000, #/* The flag to decide whether add slave node in redisClusterContext->nodes. This is set in the
@@ -50,7 +101,6 @@ module FFI
       end
 
       attach_function :freeReplyObject, [:pointer], :void, :blocking => true
-
       attach_function :redisReplyElement, [:pointer, :size_t], RedisReply.ptr, :blocking => true
       attach_function :redisConnect, [:string, :int], :pointer, :blocking => true
       attach_function :redisReconnect, [:pointer], RedisOkType, :blocking => true # :pointer => redisContext
