@@ -50,11 +50,13 @@ module FFI
         if HIREDIS_VIP_LIB_PATHS.any? {|path|
           File.file? File.join(path, "libhiredis_vip.#{FFI::Platform::LIBSUFFIX}")}
           warn "Unable to load this gem. The libhiredis_vip library exists, but cannot be loaded."
+          warn "Set HIREDIS_VIP_LIB_PATH if custom load path is desired"
           warn "If this is Windows:"
           warn "-  Check that you have MSVC runtime installed or statically linked"
           warn "-  Check that your DLL is compiled for #{FFI::Platform::ADDRESS_SIZE} bit"
         else
           warn "Unable to load this gem. The libhiredis_vip library (or DLL) could not be found."
+          warn "Set HIREDIS_VIP_LIB_PATH if custom load path is desired"
           warn "If this is a Windows platform, make sure libhiredis_vip.dll is on the PATH."
           warn "If the DLL was built with mingw, make sure the other two dependent DLLs,"
           warn "libgcc_s_sjlj-1.dll and libstdc++6.dll, are also on the PATH."
