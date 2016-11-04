@@ -72,6 +72,9 @@ module FFI
         :HIRCLUSTER_FLAG_ADD_OPENSLOT, 0x2000, #/* The flag to decide whether add open slot for master node. (10000000000000) */
         :HIRCLUSTER_FLAG_ROUTE_USE_SLOTS, 0x4000 # /* The flag to decide whether add open slot for master node. (100000000000000) */
 
+      RedisConnectionType = enum :REDIS_CONN_TCP, 0,
+                                 :REDIS_CONN_UNIX, 1
+
       RedisReplyType = enum :REDIS_REPLY_STRING, 1,
         :REDIS_REPLY_ARRAY, 2,
         :REDIS_REPLY_INTEGER, 3,
@@ -91,6 +94,28 @@ module FFI
       class Timeval < FFI::Struct
         layout :tv_sec, :long,
           :tv_usec, :long
+      end
+
+      class RedisTcpStruct < ::FFI::Struct
+        layout :host, :string,
+               :source_addr, :string,
+               :port, :int
+      end
+
+      class RedisUnixStruct < ::FFI::Struct
+        layout :path, :string
+      end
+
+      class RedisContext < ::FFI::Struct
+        layout :err, :int,
+               :errstr, [:char, 128],
+               :fd, :int,
+               :flags, :int,
+               :obuf, :string,
+               :connection_type, RedisConnectionType,
+               :timeval, :pointer,
+               :tcp, RedisTcpStruct,
+               :unix_sock, RedisUnixStruct
       end
 
       class RedisReply < ::FFI::Struct
