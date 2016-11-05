@@ -9,6 +9,8 @@ module FFI
       extend ::FFI::Library
       ffi_lib_flags :now, :global
 
+      class ConnectionError < RuntimeError; end
+
       ##
       # ffi-rzmq-core for reference
       #
@@ -148,7 +150,12 @@ module FFI
       end
 
       def self.connect(host, port)
-        ::FFI::AutoPointer.new(::FFI::HiredisVip::Core.redisConnect(host, port), ::FFI::HiredisVip::Core.method(:redisFree))
+        redis_context = ::FFI::HiredisVip::Core.redisConnect(host, port)
+        redis_context_reply = ::FFI::HiredisVip::Core::RedisContext.new(redis_context)
+
+        raise ::FFI::HiredisVip::Core::ConnectionError, redis_context_reply[:errstr] unless redis_context_reply[:err] == 0
+
+        ::FFI::AutoPointer.new(redis_context, ::FFI::HiredisVip::Core.method(:redisFree))
       end
 
       def self.cluster_command(cluster_context, command, *args)
