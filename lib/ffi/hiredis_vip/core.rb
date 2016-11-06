@@ -146,7 +146,7 @@ module FFI
       attach_function :redisClusterReset, [:pointer], :void, :blocking => true # :pointer => redisClusterContext
 
       def self.command(connection, command, *args)
-        ::FFI::HiredisVip::Core::RedisReply.new(::FFI::AutoPointer.new(::FFI::HiredisVip::Core.redisCommand(connection, command, *args), ::FFI::HiredisVip::Core.method(:freeReplyObject)))
+        ::FFI::HiredisVip::Core::RedisReply.new(::FFI::HiredisVip::Core.redisCommand(connection, command, *args))
       end
 
       def self.connect(host, port)
@@ -159,7 +159,7 @@ module FFI
       end
 
       def self.cluster_command(cluster_context, command, *args)
-        ::FFI::AutoPointer.new(::FFI::HiredisVip::Core.redisClusterCommand(cluster_context, command, *args), ::FFI::HiredisVip::Core.method(:freeReplyObject))
+        ::FFI::HiredisVip::Core::RedisReply.new(::FFI::HiredisVip::Core.redisClusterCommand(cluster_context, command, *args))
       end
 
       def self.cluster_connect(addresses, flags = nil)
